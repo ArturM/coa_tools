@@ -82,18 +82,29 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
             if vert.co[2] > y1:
                 y1 = vert.co[2]
         return [x1-x0,y1-y0]
+
+    def get_material_texture(self,obj):
+        textures = []
+        if obj.type == "MESH":
+            for mat_slot in obj.material_slots:
+                if mat_slot.material:
+                    if mat_slot.material.node_tree:
+                        textures.extend([x for x in mat_slot.material.node_tree.nodes if x.type=='TEX_IMAGE'])
+        return textures[0]
     
     def get_image_scale(self,obj):
         dimension = self.get_local_dimension(obj)
-        img = obj.material_slots[0].material.texture_slots[0].texture.image
+        img = self.get_material_texture(obj).image
         scale_x = round((dimension[0])/img.size[0],5)*self.scale_multiplier
         scale_y = round((dimension[1])/img.size[1],5)*self.scale_multiplier
         return[scale_x,scale_y]
     
     def get_sprite_scale(self,sprite_name):
         obj = bpy.data.objects[sprite_name]
-        scale_x = obj.scale[0]*self.get_image_scale(obj)[0]*obj.coa_tiles_x
-        scale_y = obj.scale[2]*self.get_image_scale(obj)[1]*obj.coa_tiles_y
+        # scale_x = obj.scale[0]*self.get_image_scale(obj)[0]*obj.coa_tools.sprite_dimension[0]
+        # scale_y = obj.scale[2]*self.get_image_scale(obj)[1]*obj.coa_tools.sprite_dimension[1]
+        scale_x = obj.scale[0]*self.get_image_scale(obj)[0]
+        scale_y = obj.scale[2]*self.get_image_scale(obj)[1]
         
         return [scale_x,scale_y]
     
@@ -116,20 +127,19 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     
     def get_sprite_tilesize(self,sprite_name):
         obj = bpy.data.objects[sprite_name]
-        return [obj.coa_tiles_x,obj.coa_tiles_y]
+        return [obj.coa_tools.sprite_dimension[0],obj.coa_tools.sprite_dimension[1]]
     
     def get_sprite_frame_index(self,sprite_name):
         obj = bpy.data.objects[sprite_name]
-        return int(obj.coa_sprite_frame)
+        return int(obj.coa_tools.slot_index)
     
     def get_modulate_color(self,sprite_name):
         obj = bpy.data.objects[sprite_name]
-        return [obj.coa_modulate_color[0],obj.coa_modulate_color[1],obj.coa_modulate_color[2]]
+        return [obj.coa_tools.modulate_color[0],obj.coa_tools.modulate_color[1],obj.coa_tools.modulate_color[2]]
     
     def get_sprite_opacity(self,sprite_name):
         obj = bpy.data.objects[sprite_name]
-        return obj.coa_alpha
-    
+        return obj.coa_tools.alpha
     
     def get_sprite_rotation(self,sprite_name):
         obj = bpy.data.objects[sprite_name]
@@ -167,17 +177,18 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     def get_edit_bones(self,context):
         self.edit_bone_matrices = {}
         active_object = context.active_object
-        context.scene.objects.active = self.armature
+        bpy.context.view_layer.objects.active = self.armature
         mode = self.armature.mode
         bpy.ops.object.mode_set(mode="EDIT")
         
         for bone in self.armature.data.bones:
+            # print("name: " + bone.name)
             edit_bone = self.armature.data.edit_bones[bone.name]
             self.edit_bone_matrices[bone.name] = edit_bone.matrix
             edit_bone.name = bone.name
         
         bpy.ops.object.mode_set(mode=mode)
-        context.scene.objects.active = active_object
+        bpy.context.view_layer.objects.active = active_object
             
     def get_bone_transformation(self,bone):
         context = bpy.context
@@ -191,7 +202,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         scale_mat[0][0] = scale[0]
         scale_mat[1][1] = scale[1]
         scale_mat[2][2] = scale[2]
-        mat_local = (mat_local*(edit_bone_matrix*scale_mat).inverted())*scale_mat
+        mat_local = (mat_local@(edit_bone_matrix@scale_mat).inverted())@scale_mat
         return mat_local
         
         
@@ -199,7 +210,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         pose_bone = self.armature.pose.bones[bone.name]
         
         if bone.parent != None:
-            local_mat = self.get_bone_transformation(bone.parent).inverted() * self.get_bone_transformation(bone)
+            local_mat = self.get_bone_transformation(bone.parent).inverted() @ self.get_bone_transformation(bone)
         else:
             local_mat = self.get_bone_transformation(bone)    
         bone_scale = local_mat.decompose()[2]
@@ -212,7 +223,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         
         if bone.parent == None:
             if type == "HEAD":
-                bone_pos = (((bone.matrix_local.to_4x4() * pose_bone.matrix_basis).to_translation())) * self.scale_multiplier
+                bone_pos = (((bone.matrix_local.to_4x4() @ pose_bone.matrix_basis).to_translation())) * self.scale_multiplier
                 bone_pos_2d = [bone_pos[0],-bone_pos[2]]
             elif type == "TAIL":    
                 bone_pos = (bone.tail_local - bone.head_local) * self.scale_multiplier
@@ -220,7 +231,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
             return bone_pos_2d
         else:
             if type == "HEAD":
-                bone_pos = (((bone.matrix_local.to_4x4() * pose_bone.matrix_basis).to_translation()) - (bone.parent.matrix_local.to_4x4().to_translation())) * self.scale_multiplier
+                bone_pos = (((bone.matrix_local.to_4x4() @ pose_bone.matrix_basis).to_translation()) - (bone.parent.matrix_local.to_4x4().to_translation())) * self.scale_multiplier
                 bone_pos_2d = [bone_pos[0],-bone_pos[2]]
             elif type == "TAIL":
                 bone_pos = (bone.tail_local - bone.head_local) * self.scale_multiplier
@@ -231,7 +242,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         pose_bone = self.armature.pose.bones[bone.name]
         
         if bone.parent != None:
-            local_mat = self.get_bone_transformation(bone.parent).inverted() * self.get_bone_transformation(bone)
+            local_mat = self.get_bone_transformation(bone.parent).inverted() @ self.get_bone_transformation(bone)
         else:
             local_mat = self.get_bone_transformation(bone)    
         bone_euler_rot = local_mat.decompose()[1].to_euler()
@@ -252,8 +263,9 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     def get_sprite_path(self,sprite_name):
         obj = bpy.data.objects[sprite_name]
         mat = obj.material_slots[0].material
-        tex = mat.texture_slots[0].texture
-        img = tex.image
+        # tex = mat.texture_slots[0].texture
+        # tex = mat.node_tree.nodes[0].texture
+        img = self.get_material_texture(obj).image
         
         img_path = self.change_path_slashes(img.filepath)
         if "//" in img_path:
@@ -303,7 +315,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
             
     def get_z_value(self,sprite):
         obj = bpy.data.objects[sprite]
-        return obj.coa_z_value
+        return obj.coa_tools.z_value
     
     
     def sprite_to_dict(self,sprite,bone=None):
@@ -334,13 +346,13 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         dict_bone["name"] = bone.name
         dict_bone["type"] = "BONE"
         dict_bone["node_path"] = str(self.get_node_path(bone,[]))#,suffix=""))
-        dict_bone["draw_bone"] = self.armature.data.bones[bone.name].coa_draw_bone
+        dict_bone["draw_bone"] = self.armature.data.bones[bone.name].coa_tools.draw_bone
         dict_bone["bone_connected"] = bone.use_connect
         dict_bone["position"] = self.get_relative_bone_pos(bone,"HEAD")
         dict_bone["position_tip"] = self.get_relative_bone_pos(bone,"TAIL")
         dict_bone["rotation"] = self.get_bone_rotation(bone)
         dict_bone["scale"] = self.get_bone_scale(bone)
-        dict_bone["z"] = self.armature.data.bones[bone.name].coa_z_value 
+        dict_bone["z"] = self.armature.data.bones[bone.name].coa_tools.z_value 
         dict_bone["children"] = []
         return dict_bone
     
@@ -369,7 +381,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         actions = []
         
         set_action(context,item=anim_collection)
-        context.scene.update()     
+        context.view_layer.update()
         
         for action in bpy.data.actions:
             if anim_collection.name in action.name:
@@ -440,8 +452,8 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         if self.armature != None:
             for bone in self.armature.data.bones:
                 pose_bone = self.armature.pose.bones[bone.name]
-                if bone.coa_data_path == "":
-                    bone.coa_data_path = "."
+                if bone.coa_tools.data_path == "":
+                    bone.coa_tools.data_path = "."
                 if (self.has_animation_data(self.armature.animation_data,"location",bone.name) or self.const_bone_has_anim_data(bone.name,"location") or restpose or pose_bone.is_in_ik_chain or len(pose_bone.constraints) > 0) and bone.use_deform:
                     channels[self.get_node_path(bone,[])+":transform/pos"] = [OrderedDict(),{"node_name":bone.name,"time_idx_hist":"0.0","animation_data":self.armature.animation_data}]
                 if (self.has_animation_data(self.armature.animation_data,"rotation",bone.name) or self.const_bone_has_anim_data(bone.name,"rotation") or restpose or pose_bone.is_in_ik_chain or len(pose_bone.constraints) > 0) and bone.use_deform:
@@ -451,8 +463,8 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
             
         for child in self.children:
             if child.type == "MESH":
-                if child.coa_data_path == "":
-                    child.coa_data_path = "."
+                if child.coa_tools.data_path == "":
+                    child.coa_tools.data_path = "."
                 if self.has_animation_data(child.animation_data,"location") or restpose:
                     channels[self.get_node_path(child,[])+":transform/pos"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
                 if self.has_animation_data(child.animation_data,"rotation") or restpose:
@@ -558,13 +570,13 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
             self.get_edit_bones(context)
         #return{'FINISHED'}
         ### store frame and animation state
-        if len(self.sprite_object.coa_anim_collections) > 0:
-            current_anim_collection = self.sprite_object.coa_anim_collections[self.sprite_object.coa_tools.anim_collections_index]
+        if len(self.sprite_object.coa_tools.anim_collections) > 0:
+            current_anim_collection = self.sprite_object.coa_tools.anim_collections[self.sprite_object.coa_tools.anim_collections_index]
             current_time_frame = context.scene.frame_current
             current_active_object = context.active_object
             current_selected_objects = []
             for obj in context.scene.objects:
-                if obj.select:
+                if obj.select_get():
                     current_selected_objects.append(obj)
         
         
@@ -604,12 +616,12 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         ### animation export
         if self.export_anims:
             self.export_dict["animations"] = []
-            if len(self.sprite_object.coa_anim_collections) > 0:
-                for anim_collection in self.sprite_object.coa_anim_collections:
+            if len(self.sprite_object.coa_tools.anim_collections) > 0:
+                for anim_collection in self.sprite_object.coa_tools.anim_collections:
                     if anim_collection.name != "NO ACTION":
                         self.report({'INFO'},str("Exporting "+anim_collection.name)+" Animation")
                         
-                        set_action(context,item=self.sprite_object.coa_anim_collections[1])
+                        set_action(context,item=self.sprite_object.coa_tools.anim_collections[1])
                         set_action(context,item=anim_collection)
                         
                         animation = OrderedDict()
@@ -634,7 +646,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                         animation["keyframes"] = channels
                         self.export_dict["animations"].append(animation)
                         
-            if len(self.sprite_object.coa_anim_collections) > 1:
+            if len(self.sprite_object.coa_tools.anim_collections) > 1:
                 set_action(context)
         ### generate json file with a pretty print settings
         json_file = json.dumps(self.export_dict, indent="\t", sort_keys=False)
@@ -646,12 +658,12 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         
         
         ### restore frame and animation state
-        if len(self.sprite_object.coa_anim_collections) > 0:
+        if len(self.sprite_object.coa_tools.anim_collections) > 0:
             set_action(context,item=current_anim_collection)
             context.scene.frame_current = current_time_frame
-            context.scene.objects.active = current_active_object
+            bpy.context.view_layer.objects.active = current_active_object
             for obj in current_selected_objects:
-                obj.select = True
+                obj.select_set(state=True)
         
         self.report({'INFO'},"Json Export done.")
         bpy.ops.ed.undo_push(message="Export Json")

@@ -61,6 +61,7 @@ from . operators import donations
 from . operators import draw_bone_shape
 from . operators import edit_armature
 from . operators import edit_mesh
+from . operators import export_json
 from . operators import edit_shapekey
 from . operators import edit_weights
 from . operators import import_sprites
@@ -233,6 +234,7 @@ classes = (
     export_dragonbones.COATOOLS_OT_DragonBonesExport,
     export_dragonbones.COATOOLS_PT_ExportPanel,
     export_creature.COATOOLS_OT_CreatureExport,
+    export_json.ExportToJson
 
 )
 

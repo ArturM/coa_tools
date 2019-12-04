@@ -696,5 +696,8 @@ class COATOOLS_PT_Collections(bpy.types.Panel):
             else:
                 operator = row.operator("render.render",text="Render Animation",icon="RENDER_ANIMATION")
                 operator.animation = True
+            
+            row = layout.row()
+            row.operator("object.export_to_json",text="Export Json",icon="EXPORT",emboss=True)
 
 preview_collections = {}

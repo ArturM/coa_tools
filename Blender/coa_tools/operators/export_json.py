@@ -292,6 +292,34 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         rel_path = os.path.relpath(copied_res_path,os.path.dirname(self.export_path))
         return self.change_path_slashes(rel_path)
 
+    def get_slot_path(self,slot,sprite_name):
+        img = [x for x in slot.mesh.materials[0].node_tree.nodes if x.type=='TEX_IMAGE'][0].image
+        
+        img_path = self.change_path_slashes(img.filepath)
+        if "//" in img_path:
+            img_path = img_path.replace("//","")
+            img_path = os.path.join(bpy.path.abspath("//"),img_path)
+        img_path = self.change_path_slashes(img_path)
+        ### create resource directory
+        res_dir_path = os.path.join(os.path.dirname(self.export_path),"sprites")
+        copied_res_path = os.path.join(res_dir_path,os.path.basename(img_path))
+        
+        if not os.path.exists(res_dir_path):
+            os.makedirs(res_dir_path)
+        if os.path.isfile(img_path):# and not os.path.isfile(copied_res_path):
+            shutil.copy(img_path,res_dir_path)
+        else:
+            original_path = img.filepath
+            export_path = os.path.join(res_dir_path,sprite_name)
+            img.filepath = export_path
+            img.filepath_raw = export_path
+            img.save()
+            img.filepath = original_path
+            img.filepath_raw = original_path
+        
+        rel_path = os.path.relpath(copied_res_path,os.path.dirname(self.export_path))
+        return self.change_path_slashes(rel_path)
+    
     def get_node_path(self,node,path_list):
         if type(node) == bpy_types.Bone:
             path_list.append(node.name)
@@ -319,11 +347,12 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     
     
     def sprite_to_dict(self,sprite,bone=None):
+        obj = bpy.data.objects[sprite]
+        isSlot = len(obj.coa_tools.slot) > 0
+        
         dict_sprites = OrderedDict()
         dict_sprites["name"] = sprite
-        dict_sprites["type"] = "SPRITE"
         dict_sprites["node_path"] = str(self.get_node_path(bpy.data.objects[sprite],[]))#,suffix=sprite))
-        dict_sprites["resource_path"] = self.get_sprite_path(sprite)
         dict_sprites["pivot_offset"] = self.get_sprite_offset(sprite)
         dict_sprites["position"] = self.get_relative_mesh_pos(bone,bpy.data.objects[sprite])
         dict_sprites["rotation"] = self.get_sprite_rotation(sprite)
@@ -334,11 +363,26 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         dict_sprites["tiles_y"] = self.get_sprite_tilesize(sprite)[1]
         dict_sprites["frame_index"] = self.get_sprite_frame_index(sprite)
         dict_sprites["children"] = []
-        
+
+        if isSlot:
+            dict_sprites["type"] = "SLOTSPRITE"
+            dict_sprites["slotitems"] = []
+            
+            for slot in obj.coa_tools.slot:
+                slot_sprite = OrderedDict()
+                slot_sprite["name"] = slot.mesh.name
+                slot_sprite["resource_path"] = self.get_slot_path(slot, slot.mesh.name)
+                slot_sprite["frame_index"] = slot.index
+
+                dict_sprites["slotitems"].append(slot_sprite)
+        else:
+            dict_sprites["type"] = "SPRITE"
+            dict_sprites["resource_path"] = self.get_sprite_path(sprite)
+            
         for child in bpy.data.objects[sprite].children:
             if child.type == "MESH":
                 dict_sprites["children"].append(self.sprite_to_dict(child.name,bpy.data.objects[sprite]))
-                
+        
         return dict_sprites
     
     def bone_to_dict(self,bone):
@@ -471,19 +515,19 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                     channels[self.get_node_path(child,[])+":transform/rot"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
                 if self.has_animation_data(child.animation_data,"scale") or restpose:
                     channels[self.get_node_path(child,[])+":transform/scale"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
-                if self.has_animation_data(child.animation_data,"coa_alpha") or restpose:
+                if self.has_animation_data(child.animation_data,"alpha") or restpose:
                     channels[self.get_node_path(child,[])+":visibility/opacity"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
-                if self.has_animation_data(child.animation_data,"coa_z_value") or restpose:
+                if self.has_animation_data(child.animation_data,"z_value") or restpose:
                     channels[self.get_node_path(child,[])+":z/z"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
-                if self.has_animation_data(child.animation_data,"coa_sprite_frame") or restpose:
+                if self.has_animation_data(child.animation_data,"sprite_frame") or restpose:
                     channels[self.get_node_path(child,[])+":frame"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
-                if self.has_animation_data(child.animation_data,"coa_modulate_color") or restpose:
+                if self.has_animation_data(child.animation_data,"modulate_color") or restpose:
                     channels[self.get_node_path(child,[])+":modulate"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
                     
         current_frame = scene.frame_current
-        if restpose:
-            start=0
-            end=1
+        # if restpose:
+        #     start=0
+        #     end=1
         self.start = start
         self.end = end
         interval = 1
@@ -609,9 +653,9 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                         self.export_dict["nodes"].append(self.armature_to_dict(bone))     
         
         ### export sprites that are not attached to any armature
-        for child in self.sprite_object.children:
-            if child.type == "MESH":
-                self.export_dict["nodes"].append(self.sprite_to_dict(child.name,self.sprite_object))
+        # for child in self.sprite_object.children:
+        #     if child.type == "MESH":
+        #         self.export_dict["nodes"].append(self.sprite_to_dict(child.name,self.sprite_object))
         
         ### animation export
         if self.export_anims:
@@ -639,7 +683,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                             channels = self.get_action_data(anim_collection.frame_start,anim_collection.frame_end,restpose=True)
                             self.armature.data.pose_position = "POSE"
                         else:
-                            channels = self.get_action_data(anim_collection.frame_start,anim_collection.frame_end)
+                            channels = self.get_action_data(anim_collection.frame_start,anim_collection.frame_end,restpose=True)
                         #channels = self.get_action_data(anim_collection.frame_start,anim_collection.frame_end)
                         for key in channels:
                             all_channels[key] = channels[key]

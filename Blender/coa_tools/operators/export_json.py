@@ -515,11 +515,11 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                     channels[self.get_node_path(child,[])+":transform/rot"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
                 if self.has_animation_data(child.animation_data,"scale") or restpose:
                     channels[self.get_node_path(child,[])+":transform/scale"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
-                if self.has_animation_data(child.animation_data,"alpha") or restpose:
-                    channels[self.get_node_path(child,[])+":visibility/opacity"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
+                # if self.has_animation_data(child.animation_data,"alpha") or restpose:
+                #     channels[self.get_node_path(child,[])+":visibility/opacity"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
                 if self.has_animation_data(child.animation_data,"z_value") or restpose:
                     channels[self.get_node_path(child,[])+":z/z"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
-                if self.has_animation_data(child.animation_data,"sprite_frame") or restpose:
+                if self.has_animation_data(child.animation_data,"slot_index") or restpose:
                     channels[self.get_node_path(child,[])+":frame"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
                 if self.has_animation_data(child.animation_data,"modulate_color") or restpose:
                     channels[self.get_node_path(child,[])+":modulate"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
@@ -683,7 +683,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                             channels = self.get_action_data(anim_collection.frame_start,anim_collection.frame_end,restpose=True)
                             self.armature.data.pose_position = "POSE"
                         else:
-                            channels = self.get_action_data(anim_collection.frame_start,anim_collection.frame_end,restpose=True)
+                            channels = self.get_action_data(anim_collection.frame_start,anim_collection.frame_end)
                         #channels = self.get_action_data(anim_collection.frame_start,anim_collection.frame_end)
                         for key in channels:
                             all_channels[key] = channels[key]

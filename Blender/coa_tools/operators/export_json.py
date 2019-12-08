@@ -684,7 +684,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                             self.armature.data.pose_position = "POSE"
                         else:
                             channels = self.get_action_data(anim_collection.frame_start,anim_collection.frame_end)
-                        #channels = self.get_action_data(anim_collection.frame_start,anim_collection.frame_end)
+                        
                         for key in channels:
                             all_channels[key] = channels[key]
                         animation["keyframes"] = channels

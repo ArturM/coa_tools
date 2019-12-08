@@ -465,6 +465,7 @@ def clear_pose(obj):
         obj.coa_tools.alpha = 1.0
         obj.coa_tools.modulate_color = (1.0,1.0,1.0)
         obj.coa_tools.slot_index = 0
+        obj.coa_tools.visible = True
 
 def set_direction(obj):
     if obj.coa_flip_direction:
@@ -705,6 +706,9 @@ def get_children(context,obj,ob_list=[]):
 def set_z_value(context,obj,z):
     scale = get_addon_prefs(context).sprite_import_export_scale
     obj.location[1] = -z * scale
+
+def set_visible(context,obj,visible):
+    obj.hide_set(visible)
 
 def set_modulate_color(obj, context, color):
     if obj.type == "MESH":

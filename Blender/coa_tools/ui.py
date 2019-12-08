@@ -251,6 +251,16 @@ class COATOOLS_PT_ObjectProperties(bpy.types.Panel):
                 op.add_keyframe = False
 
                 row = layout.row(align=True)
+                row.prop(obj.coa_tools, 'visible', text="Visible")
+                op = row.operator("coa_tools.add_keyframe",text="",icon="KEYTYPE_MOVING_HOLD_VEC")
+                op.prop_name = "coa_tools.visible"
+                op.add_keyframe = True
+                op.default_interpolation = "CONSTANT"
+                op = row.operator("coa_tools.add_keyframe",text="",icon="HANDLETYPE_ALIGNED_VEC")
+                op.prop_name = "coa_tools.visible"
+                op.add_keyframe = False
+
+                row = layout.row(align=True)
                 row.prop(obj.coa_tools,'alpha',text="Alpha",icon="TEXTURE")
                 op = row.operator("coa_tools.add_keyframe",text="",icon="KEYTYPE_MOVING_HOLD_VEC")
                 op.prop_name = "coa_tools.alpha"

@@ -345,6 +345,9 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         obj = bpy.data.objects[sprite]
         return obj.coa_tools.z_value
     
+    def get_visible(self,sprite):
+        obj = bpy.data.objects[sprite]
+        return obj.coa_tools.visible
     
     def sprite_to_dict(self,sprite,bone=None):
         obj = bpy.data.objects[sprite]
@@ -523,6 +526,8 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                     channels[self.get_node_path(child,[])+":frame"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
                 if self.has_animation_data(child.animation_data,"modulate_color") or restpose:
                     channels[self.get_node_path(child,[])+":modulate"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
+                if self.has_animation_data(child.animation_data,"visible") or restpose:
+                    channels[self.get_node_path(child,[])+":visible"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
                     
         current_frame = scene.frame_current
         # if restpose:
@@ -583,6 +588,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                         self.keyframe_to_dict(track,"z",self.get_z_value(sprite),channels,key)
                         self.keyframe_to_dict(track,"frame",self.get_sprite_frame_index(sprite),channels,key)
                         self.keyframe_to_dict(track,"modulate",self.get_modulate_color(sprite),channels,key)
+                        self.keyframe_to_dict(track,"visible",self.get_visible(sprite),channels,key)
 
                                      
         scene.frame_current = current_frame

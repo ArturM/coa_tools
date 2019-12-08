@@ -33,6 +33,13 @@ def set_z_value(self, context):
                     obj.coa_tools.z_value = self.z_value
                 functions.set_z_value(context, obj, self.z_value)
 
+def set_visible(self, context):
+    if context.scene.view_layers[0].objects.active == self.id_data:
+        for obj in bpy.context.selected_objects:
+            if obj.type == "MESH":
+                if obj != self.id_data:
+                    obj.coa_tools.visible = self.visible
+                functions.set_visible(context, obj, self.visible)
 
 def set_alpha(self, context):
     if context.scene.view_layers[0].objects.active == self.id_data:
@@ -364,6 +371,7 @@ class ObjectProperties(bpy.types.PropertyGroup):
 
     dimensions_old: FloatVectorProperty()
     sprite_dimension: FloatVectorProperty()
+    visible: bpy.props.BoolProperty(default=True, description="Show Sprite or not", update=set_visible)
     z_value: IntProperty(description="Z Depth", default=0, update=set_z_value)
     z_value_last: IntProperty(default=0)
     alpha: FloatProperty(default=1.0, min=0.0, max=1.0, update=set_alpha)

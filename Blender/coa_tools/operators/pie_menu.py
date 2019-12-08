@@ -107,6 +107,11 @@ def add_remove_keyframe(pie, add):
         op.add_keyframe = add
         op.default_interpolation = "CONSTANT"
 
+        op = pie.operator("coa_tools.add_keyframe", text="Visible", icon="IMAGE_RGB")
+        op.prop_name = "coa_tools.visible"
+        op.add_keyframe = add
+        op.default_interpolation = "CONSTANT"
+
         op = pie.operator("coa_tools.add_keyframe", text="Sprite Alpha", icon="RESTRICT_VIEW_OFF")
         op.prop_name = "coa_tools.alpha"
         op.add_keyframe = add

@@ -92,7 +92,7 @@ class COAToolsPreferences(bpy.types.AddonPreferences):
     auto_check_update: bpy.props.BoolProperty(
     name = "Auto-check for Update",
     description = "If enabled, auto-check for updates using an interval",
-    default = True,
+    default = False,
     )
     updater_intrval_months: bpy.props.IntProperty(
     name='Months',

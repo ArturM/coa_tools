@@ -530,9 +530,9 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                     channels[self.get_node_path(child,[])+":visible"] = [OrderedDict(),{"node_name":child.name,"time_idx_hist":"0.0","animation_data":child.animation_data}]
                     
         current_frame = scene.frame_current
-        # if restpose:
-        #     start=0
-        #     end=1
+        if restpose:
+            start=0
+            end=1
         self.start = start
         self.end = end
         interval = 1

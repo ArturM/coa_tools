@@ -46,14 +46,15 @@ func _enter_tree():
 	label_src_scene = import_window.get_node("path_source_file/label")
 	
 	warning_dialog = import_window.get_node("warning_dialog")
-	
+	var base_control = get_editor_interface().get_base_control()
+
 	#src_dialog = import_window.get_node("file_source")
 	src_dialog = EditorFileDialog.new()
 	src_dialog.set_access(src_dialog.ACCESS_FILESYSTEM)
 	src_dialog.set_mode(src_dialog.MODE_OPEN_FILE)
 	src_dialog.add_filter("*.json")
 	src_dialog.connect("file_selected",self,"_src_dialog_confirm")
-	get_base_control().add_child(src_dialog)
+	base_control.add_child(src_dialog)
 	
 	#dst_dialog = import_window.get_node("file_destination")
 	dst_dialog = EditorFileDialog.new()
@@ -63,10 +64,10 @@ func _enter_tree():
 	dst_dialog.add_filter("*.tscn")
 	dst_dialog.add_filter("*.scn")
 	dst_dialog.connect("file_selected",self,"_dst_dialog_confirm")
-	get_base_control().add_child(dst_dialog)
+	base_control.add_child(dst_dialog)
 	
 	
-	get_base_control().add_child(import_window)
+	base_control.add_child(import_window)
 	import_window.get_ok().set_text("Import")
 	btn_load_json = import_window.get_node("button_source")
 	btn_load_json.connect("pressed",self,"_open_src_dialog")
@@ -95,7 +96,8 @@ func _exit_tree():
 func _open_importer():
 	### center window
 	var pos = OS.get_window_size()*0.5 - import_window.get_size()*0.5
-	import_window.set_pos(pos)
+	#print("type of window: " + import_window.typeof())
+	import_window.set_position(pos)
 
 	json_info.clear()
 	import_window.popup_centered()
@@ -236,8 +238,8 @@ func get_child_recursive(node,child_list=[]):
 ### this function updates a node with another one. it will update all relevant node properties with the once to replace
 func replace_node(node, replace_with):
 	if node.get_type() == "Node2D" or node.get_type() == "Sprite":
-		node.set_pos(replace_with.get_pos())
-		node.set_rot(replace_with.get_rot())
+		node.set_position(replace_with.get_pos())
+		node.set_rotation(replace_with.get_rot())
 		node.set_scale(replace_with.get_scale())
 		node.set_opacity(replace_with.get_opacity())
 		node.set_z(replace_with.get_z())
@@ -258,7 +260,7 @@ func replace_node(node, replace_with):
 				node.clear_caches()
 	
 		### update animations and add new animations
-		var anim_list = replace_with.get_animation_list()
+		anim_list = replace_with.get_animation_list()
 		for anim in anim_list:
 			if node.has_animation(anim):
 				node.get_animation(anim).clear()
@@ -329,7 +331,7 @@ func show_warning_dialog(title="",msg=""):
 	if title != "":
 		warning_dialog.set_title(title)
 		
-	var pos = import_window.get_pos() + import_window.get_size()*0.5 - warning_dialog.get_size()*0.5
+	var pos = import_window.position + import_window.get_size()*0.5 - warning_dialog.get_size()*0.5
 	
 
 ### recursive function that looks up if a node has BONE nodes as children

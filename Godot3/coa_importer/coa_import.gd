@@ -37,7 +37,6 @@ func get_option_visibility(option, options):
 
 
 func import(source_file, save_path, options, r_platform_variants, r_gen_files):
-	print("huhu")
 	var json = File.new()
 	var json_data
 
@@ -99,11 +98,8 @@ func import_animations(animations, root):
 					key = key.left(key.length() - channel.length()) + "scale"
 				"z/z":
 					key = key.left(key.length() - channel.length()) + "z_index"
-				"modulate":
-					key = key.left(key.length() - channel.length()) + "modulate"
-				"visible":
-					key = key.left(key.length() - channel.length()) + "visible"
-
+			
+			key = key.replace(".", "_")
 			var idx = anim_data.add_track(Animation.TYPE_VALUE)
 			anim_data.track_set_path(idx,key)
 			for time in track:
@@ -120,14 +116,14 @@ func import_animations(animations, root):
 						anim_data.track_insert_key(idx,float(time),-rad2deg(value))
 					else:
 						anim_data.track_insert_key(idx,float(time),value)
+				else:
+					anim_data.track_insert_key(idx,float(time),value)
 
 				if key.find(":frame") != -1 or key.find(":z/z") != -1:
 					anim_data.track_set_interpolation_type(idx, Animation.INTERPOLATION_NEAREST)
 				else:
 					anim_data.track_set_interpolation_type(idx, Animation.INTERPOLATION_LINEAR)
 
-				print("moiauhdfkjh")
-				print(key)
 				if key.find(":visible") != -1:
 					anim_data.value_track_set_update_mode(idx, 1)
 
@@ -138,6 +134,8 @@ func import_animations(animations, root):
 ### this function generates the complete node structure that is stored in a json file. Generates SPRITE and BONE nodes.
 func create_nodes(source_file, nodes, root, parent, copy_images=true,i=0):
 	for node in nodes:
+		node["name"] = node["name"].replace(".", "_")
+
 		var new_node
 		var offset = Vector2(0,0)
 		if "offset" in node:
@@ -175,9 +173,9 @@ func create_nodes(source_file, nodes, root, parent, copy_images=true,i=0):
 
 			new_node.set_meta("imported_from_blender",true)
 			new_node.set_name(node["name"])
-			new_node.set_hframes(node["tiles_x"])
-			new_node.set_vframes(node["tiles_y"])
-			new_node.set_frame(node["frame_index"])
+			# new_node.set_hframes(node["tiles_x"])
+			# new_node.set_vframes(node["tiles_y"])
+			# new_node.set_frame(node["frame_index"])
 			new_node.set_centered(false)
 			new_node.set_offset(Vector2(node["pivot_offset"][0],node["pivot_offset"][1]))
 			new_node.set_position(Vector2(node["position"][0]+offset[0],node["position"][1]+offset[0]))
@@ -192,7 +190,7 @@ func create_nodes(source_file, nodes, root, parent, copy_images=true,i=0):
 			new_node = AnimatedSprite.new()
 
 			var spriteFrame = SpriteFrames.new()
-			spriteFrame.add_animation("default")
+			# spriteFrame.add_animation("default")
 			for s in node["slotitems"]:
 				var sprite_path = source_file.get_base_dir().plus_file(s["resource_path"])
 				### set sprite texture

@@ -171,9 +171,13 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                         pass
                 weight = weight/vertex_count
                 vertex_weights_average[vertex_group.name] = weight
-        bone = max(vertex_weights_average, key=vertex_weights_average.get)
-        return bone
-    
+        if len(vertex_weights_average) > 0:
+            bone = max(vertex_weights_average, key=vertex_weights_average.get)
+            return bone
+        else:
+            return None
+
+
     def get_edit_bones(self,context):
         self.edit_bone_matrices = {}
         active_object = context.active_object
@@ -332,7 +336,9 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                 self.get_node_path(node.parent,path_list)
             elif node.parent != None and node.parent.type == "ARMATURE":
                 path_list.append(node.name)
-                self.get_node_path(self.armature.data.bones[self.get_bone_sprites(node,self.armature)],path_list)
+                bone = self.get_bone_sprites(node,self.armature)
+                if bone != None:
+                    self.get_node_path(self.armature.data.bones[bone],path_list)
 
         path = ""
         for i,item in enumerate(reversed(path_list)):   
@@ -644,11 +650,12 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                 if child in self.armature.children:
                     if child.type == "MESH":
                         bone = self.get_bone_sprites(child,self.armature)
-                        if bone not in self.bone_sprite_constraint:
-                            self.bone_sprite_constraint[bone] = []
-                        if child.name not in self.bone_sprite_constraint[bone]:
-                            self.bone_sprite_constraint[bone].append(child.name)
-                
+                        if bone != None:
+                            if bone not in self.bone_sprite_constraint:
+                                self.bone_sprite_constraint[bone] = []
+                            if child.name not in self.bone_sprite_constraint[bone]:
+                                self.bone_sprite_constraint[bone].append(child.name)
+            
             for bone in self.armature.data.bones:
                 if bone.name not in self.bone_sprite_constraint:
                     self.bone_sprite_constraint[bone.name] = []

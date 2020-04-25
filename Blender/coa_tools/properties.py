@@ -223,7 +223,27 @@ def set_actions(self, context):
         dirpath = path[:path.rfind("/")]
         final_path = dirpath + "/" + action_name
         context.scene.render.filepath = final_path
+    
+    updateSound(self, context)
 
+def updateSound(self, context):
+    scene = context.scene
+    sprite_object = functions.get_sprite_object(context.active_object)
+    index = sprite_object.coa_tools.anim_collections_index
+    item = sprite_object.coa_tools.anim_collections[index]
+    sequences = scene.sequence_editor.sequences
+    # sequences = bpy.data.scenes['Scene'].sequence_editor.sequences
+    # # store audio strips
+    # for s in sequences:
+    #     seq = item.sound_sequences.add()
+    #     seq.applySeq(s)
+    #remove audio strips from sequencer timeline
+    for s in sequences:
+        sequences.remove(s)
+    #add stores audio strips of current animationcollection to sequencer timeline
+    for s in item.sound_sequences:
+        soundseq = sequences.new_sound(s.name, s.filepath, s.channel, s.frame_start)
+        s.applyToSeq(soundseq)
 
 def set_nla_mode(self, context):
     sprite_object = functions.get_sprite_object(context.active_object)
@@ -310,6 +330,43 @@ class TimelineEvent(bpy.types.PropertyGroup):
     frame: IntProperty(default=0, min=0, update=change_event_order)
     collapsed: BoolProperty(default=False)
 
+class SoundSequence(bpy.types.PropertyGroup):
+    def applySeq(self, seq):
+        self.name = seq.name
+        self.channel = seq.channel
+        self.frame_final_duration = seq.frame_final_duration
+        self.frame_duration = seq.frame_duration
+        self.frame_start = seq.frame_start
+        self.frame_final_start = seq.frame_final_start
+        self.frame_final_end = seq.frame_final_end
+        self.frame_offset_start = seq.frame_offset_start
+        self.frame_offset_end = seq.frame_offset_end
+        self.frame_still_start = seq.frame_still_start
+        self.frame_still_end = seq.frame_still_end
+        self.filepath = seq.sound.filepath
+    
+    def applyToSeq(self, seq):
+        seq.frame_final_duration = self.frame_final_duration
+        seq.frame_final_start = self.frame_final_start
+        seq.frame_final_end = self.frame_final_end
+        seq.frame_offset_start = self.frame_offset_start
+        seq.frame_offset_end = self.frame_offset_end
+        seq.frame_still_start = self.frame_still_start
+        seq.frame_still_end = self.frame_still_end
+    
+    name: StringProperty()
+    channel: IntProperty()
+    frame_final_duration: IntProperty()#duration of "cut" item
+    frame_duration: IntProperty()
+    frame_start: IntProperty()
+    frame_final_start: IntProperty()
+    frame_final_end: IntProperty()
+    frame_offset_start: IntProperty()
+    frame_offset_end: IntProperty()
+    frame_still_start: IntProperty()
+    frame_still_end: IntProperty()
+    filepath: StringProperty()
+
 class AnimationCollections(bpy.types.PropertyGroup):
     def set_frame_start(self,context):
         bpy.context.scene.frame_start = self.frame_start
@@ -355,6 +412,7 @@ class AnimationCollections(bpy.types.PropertyGroup):
     frame_end: IntProperty(default=250, min=1, update=set_frame_end)
     timeline_events: CollectionProperty(type=TimelineEvent)
     event_index: IntProperty(default=-1, max=-1)
+    sound_sequences: CollectionProperty(type=SoundSequence)
 
 class ObjectProperties(bpy.types.PropertyGroup):
     def get_selected_shapekey(self):

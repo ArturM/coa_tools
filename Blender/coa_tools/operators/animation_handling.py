@@ -239,7 +239,7 @@ class COATOOLS_OT_AddAnimationCollection(bpy.types.Operator):
             item.name = check_name(self.sprite_object.coa_tools.anim_collections,"NewCollection")
             item.name_old = item.name
             item.action_collection = True
-            
+
             self.sprite_object.coa_tools.anim_collections_index = len(self.sprite_object.coa_tools.anim_collections)-1
         else:
             return{'FINISHED'}    
@@ -555,6 +555,46 @@ class COATOOLS_OT_RemoveEvent(bpy.types.Operator):
         anim = sprite_object.coa_tools.anim_collections[sprite_object.coa_tools.anim_collections_index]
         timeline_events = anim.timeline_events[self.index]
         timeline_events.event.remove(self.event_index)
+        return {"FINISHED"}
+
+class COATOOLS_OT_SaveAudio(bpy.types.Operator):
+    bl_idname = "coa_tools.save_audio"
+    bl_label = "Save audio"
+    bl_description = "Save audio from sequencer"
+    bl_options = {"REGISTER"}
+
+    index: IntProperty()
+    event_index: IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return True
+
+    def execute(self, context):
+        scene = context.scene
+        obj = context.active_object
+        sprite_object = get_sprite_object(obj)
+
+        anim = sprite_object.coa_tools.anim_collections[sprite_object.coa_tools.anim_collections_index]
+        # timeline_events = anim.timeline_events[self.index]
+        # timeline_events.event.remove(self.event_index)
+
+
+        # sprite_object = functions.get_sprite_object(context.active_object)
+        # index = sprite_object.coa_tools.anim_collections_index
+        # item = sprite_object.coa_tools.anim_collections[index]
+        sequences = scene.sequence_editor.sequences
+        # sequences = bpy.data.scenes['Scene'].sequence_editor.sequences
+
+        # delete sequences
+        for s in anim.sound_sequences:
+            anim.sound_sequences.remove(s)
+
+        # store audio strips
+        for s in sequences:
+            seq = anim.sound_sequences.add()
+            seq.applySeq(s)
+
         return {"FINISHED"}
     
 ### Add Timeline Event -> Dragonbones

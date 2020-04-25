@@ -678,6 +678,7 @@ class COATOOLS_PT_Collections(bpy.types.Panel):
             col = row.column(align=True)
             col.operator("coa_tools.add_animation_collection",text="",icon="ADD")
             col.operator("coa_tools.remove_animation_collection",text="",icon="REMOVE")
+            col.operator("coa_tools.save_audio",text="A")
 
             if len(sprite_object.coa_tools.anim_collections) > 2 and sprite_object.coa_tools.anim_collections_index > 1:
                 col.operator("coa_tools.duplicate_animation_collection",text="",icon="COPY_ID")

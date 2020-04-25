@@ -140,6 +140,7 @@ classes = (
     props.SlotData,
     props.Event,
     props.TimelineEvent,
+    props.SoundSequence,
     props.AnimationCollections,
     props.ObjectProperties,
     props.SceneProperties,
@@ -208,6 +209,7 @@ classes = (
     animation_handling.COATOOLS_OT_AddEvent,
     animation_handling.COATOOLS_OT_RemoveEvent,
     animation_handling.COATOOLS_OT_AddTimelineEvent,
+    animation_handling.COATOOLS_OT_SaveAudio,
     animation_handling.COATOOLS_OT_RemoveTimelineEvent,
 
     create_ortho_cam.COATOOLS_OT_CreateOrtpographicCamera,

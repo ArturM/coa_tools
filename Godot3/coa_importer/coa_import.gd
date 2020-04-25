@@ -56,7 +56,7 @@ func import(source_file, save_path, options, r_platform_variants, r_gen_files):
 
 	### import animations and log
 	if "animations" in json_data:
-		import_animations(json_data["animations"], scene)
+		import_animations(json_data["animations"], scene, source_file)
 
 	var packed_scene = PackedScene.new()
 	packed_scene.pack(scene)
@@ -74,11 +74,16 @@ func has_bone_child(node):
 	return false
 
 ### function to import animations -> this will create an AnimationPlayer Node and generate all animations with its tracks and values
-func import_animations(animations, root):
+func import_animations(animations, root, source_file):
 	var anim_player = AnimationPlayer.new()
 	root.add_child(anim_player)
 	anim_player.set_owner(root)
 	anim_player.set_name("AnimationPlayer")
+
+	var audioStreamPlayer = AudioStreamPlayer.new()
+	root.add_child(audioStreamPlayer)
+	audioStreamPlayer.set_owner(root)
+	audioStreamPlayer.set_name("AudioStreamPlayer")
 
 	for anim in animations:
 		anim_player.clear_caches()
@@ -102,6 +107,7 @@ func import_animations(animations, root):
 			key = key.replace(".", "_")
 			var idx = anim_data.add_track(Animation.TYPE_VALUE)
 			anim_data.track_set_path(idx,key)
+
 			for time in track:
 				var value = track[time]["value"]
 				if typeof(value) == TYPE_ARRAY:
@@ -127,6 +133,18 @@ func import_animations(animations, root):
 				if key.find(":visible") != -1:
 					anim_data.value_track_set_update_mode(idx, 1)
 
+		var fps = anim["fps"]
+		for sound in anim["sounds"]:
+			var trackIndex = anim_data.add_track(Animation.TYPE_AUDIO)
+			anim_data.track_set_path(trackIndex, "AudioStreamPlayer")
+
+			#var startframe = (sound["frame_start"]+sound["frame_final_duration"]+sound["frame_offset_start"])/fps
+			var startframe = sound["frame_start"]/fps
+			
+			var file = source_file.get_base_dir().plus_file(sound["resource_path"])
+			var loadedFile = load(file)
+			var aidx = anim_data.audio_track_insert_key(trackIndex, startframe, loadedFile)
+		
 		anim_player.add_animation(anim["name"],anim_data)
 		anim_player.set_meta(anim["name"],true)
 		anim_player.clear_caches()

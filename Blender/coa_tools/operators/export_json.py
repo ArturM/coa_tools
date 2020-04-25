@@ -295,6 +295,33 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         
         rel_path = os.path.relpath(copied_res_path,os.path.dirname(self.export_path))
         return self.change_path_slashes(rel_path)
+    
+    ### get the sprite resource path and copy image resources in a subfolder of the json location
+    def get_audio_path(self, sequence):
+        audio_path = self.change_path_slashes(sequence.filepath)
+        if "//" in audio_path:
+            audio_path = audio_path.replace("//","")
+            audio_path = os.path.join(bpy.path.abspath("//"), audio_path)
+        audio_path = self.change_path_slashes(audio_path)
+        ### create resource directory
+        res_dir_path = os.path.join(os.path.dirname(self.export_path), "audio")
+        copied_res_path = os.path.join(res_dir_path,os.path.basename(audio_path))
+        
+        if not os.path.exists(res_dir_path):
+            os.makedirs(res_dir_path)
+        if os.path.isfile(audio_path):# and not os.path.isfile(copied_res_path):
+            shutil.copy(audio_path, res_dir_path)
+        # else:
+        #     original_path = sequence.filepath
+        #     export_path = os.path.join(res_dir_path, sequence.name)
+        #     img.filepath = export_path
+        #     img.filepath_raw = export_path
+        #     img.save()
+        #     img.filepath = original_path
+        #     img.filepath_raw = original_path
+        
+        rel_path = os.path.relpath(copied_res_path, os.path.dirname(self.export_path))
+        return self.change_path_slashes(rel_path)
 
     def get_slot_path(self,slot,sprite_name):
         img = [x for x in slot.mesh.materials[0].node_tree.nodes if x.type=='TEX_IMAGE'][0].image
@@ -443,7 +470,7 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         dict["frame_offset_end"] = sequence.frame_offset_end
         dict["frame_still_start"] = sequence.frame_still_start
         dict["frame_still_end"] = sequence.frame_still_end
-        dict["filepath"] = sequence.filepath
+        dict["resource_path"] = self.get_audio_path(sequence)
         return dict
     
     def get_collection_action(self,context,anim_collection):

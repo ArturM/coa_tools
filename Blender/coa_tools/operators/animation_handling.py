@@ -587,8 +587,9 @@ class COATOOLS_OT_SaveAudio(bpy.types.Operator):
         # sequences = bpy.data.scenes['Scene'].sequence_editor.sequences
 
         # delete sequences
-        for s in anim.sound_sequences:
-            anim.sound_sequences.remove(s)
+        anim.sound_sequences.clear()
+        # for s in anim.sound_sequences:
+        #     anim.sound_sequences.remove(s)
 
         # store audio strips
         for s in sequences:

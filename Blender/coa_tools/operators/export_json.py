@@ -428,8 +428,24 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
             else:
                 dict_bone["children"].append(self.armature_to_dict(child))        
     
-        return dict_bone    
+        return dict_bone 
 
+    def soundSequence_to_dict(self, sequence):
+        dict = OrderedDict()
+        dict["name"] = sequence.name
+        dict["channel"] = sequence.channel
+        dict["frame_final_duration"] = sequence.frame_final_duration
+        dict["frame_duration"] = sequence.frame_duration
+        dict["frame_start"] = sequence.frame_start
+        dict["frame_final_start"] = sequence.frame_final_start
+        dict["frame_final_end"] = sequence.frame_final_end
+        dict["frame_offset_start"] = sequence.frame_offset_start
+        dict["frame_offset_end"] = sequence.frame_offset_end
+        dict["frame_still_start"] = sequence.frame_still_start
+        dict["frame_still_end"] = sequence.frame_still_end
+        dict["filepath"] = sequence.filepath
+        return dict
+    
     def get_collection_action(self,context,anim_collection):
         actions = []
         
@@ -687,6 +703,11 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                         animation["start"] = (anim_collection.frame_start-1)/context.scene.render.fps
                         animation["length"] = (anim_collection.frame_end)/context.scene.render.fps
                         animation["keyframes"] = OrderedDict()
+                        
+                        ### sounds
+                        animation["sounds"] = []
+                        for sequence in anim_collection.sound_sequences:
+                            animation["sounds"].append(self.soundSequence_to_dict(sequence))
                         
                         baked_actions = self.get_collection_action(context,anim_collection)
                         all_channels = OrderedDict()

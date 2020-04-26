@@ -138,13 +138,16 @@ func import_animations(animations, root, source_file):
 			var trackIndex = anim_data.add_track(Animation.TYPE_AUDIO)
 			anim_data.track_set_path(trackIndex, "AudioStreamPlayer")
 
-			#var startframe = (sound["frame_start"]+sound["frame_final_duration"]+sound["frame_offset_start"])/fps
-			var startframe = sound["frame_start"]/fps
+			var startframe = (sound["frame_start"]+sound["frame_offset_start"])/fps
+			var startoffset = sound["frame_offset_start"]/fps
+			var endoffset = sound["frame_offset_end"]/fps
 			
 			var file = source_file.get_base_dir().plus_file(sound["resource_path"])
 			var loadedFile = load(file)
-			var aidx = anim_data.audio_track_insert_key(trackIndex, startframe, loadedFile)
-		
+			var keyIndex = anim_data.audio_track_insert_key(trackIndex, startframe, loadedFile)
+			anim_data.audio_track_set_key_start_offset(trackIndex, keyIndex, startoffset)
+			anim_data.audio_track_set_key_end_offset(trackIndex, keyIndex, endoffset)
+
 		anim_player.add_animation(anim["name"],anim_data)
 		anim_player.set_meta(anim["name"],true)
 		anim_player.clear_caches()

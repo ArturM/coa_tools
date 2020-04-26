@@ -461,15 +461,15 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         dict = OrderedDict()
         dict["name"] = sequence.name
         dict["channel"] = sequence.channel
-        dict["frame_final_duration"] = sequence.frame_final_duration
+        # dict["frame_final_duration"] = sequence.frame_final_duration
         dict["frame_duration"] = sequence.frame_duration
         dict["frame_start"] = sequence.frame_start
-        dict["frame_final_start"] = sequence.frame_final_start
-        dict["frame_final_end"] = sequence.frame_final_end
+        # dict["frame_final_start"] = sequence.frame_final_start
+        # dict["frame_final_end"] = sequence.frame_final_end
         dict["frame_offset_start"] = sequence.frame_offset_start
         dict["frame_offset_end"] = sequence.frame_offset_end
-        dict["frame_still_start"] = sequence.frame_still_start
-        dict["frame_still_end"] = sequence.frame_still_end
+        # dict["frame_still_start"] = sequence.frame_still_start
+        # dict["frame_still_end"] = sequence.frame_still_end
         dict["resource_path"] = self.get_audio_path(sequence)
         return dict
     

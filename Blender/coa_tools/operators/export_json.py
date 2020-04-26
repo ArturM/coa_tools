@@ -473,6 +473,22 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         dict["resource_path"] = self.get_audio_path(sequence)
         return dict
     
+    def timelineEvent_to_dict(self, timelineEvent):
+        dict = OrderedDict()
+        dict["frame"] = timelineEvent.frame
+        dict["events"] = []
+        for event in timelineEvent.event:
+            dict["events"].append(self.event_to_dict(event))
+        
+        return dict
+        
+    def event_to_dict(self, event):
+        dict = OrderedDict()
+        # dict["name"] = event.name
+        dict["type"] = event.type
+        dict["value"] = event.value
+        return dict
+    
     def get_collection_action(self,context,anim_collection):
         actions = []
         
@@ -650,9 +666,6 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                     
                     
     def execute(self, context):
-        
-        
-        
         self.scale_multiplier = round(1/get_addon_prefs(context).sprite_import_export_scale,4)
         
         self.export_path = self.filepath
@@ -735,6 +748,11 @@ class ExportToJson(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                         animation["sounds"] = []
                         for sequence in anim_collection.sound_sequences:
                             animation["sounds"].append(self.soundSequence_to_dict(sequence))
+                        
+                        ### events
+                        animation["events"] = []
+                        for timelineEvent in anim_collection.timeline_events:
+                            animation["events"].append(self.timelineEvent_to_dict(timelineEvent))
                         
                         baked_actions = self.get_collection_action(context,anim_collection)
                         all_channels = OrderedDict()

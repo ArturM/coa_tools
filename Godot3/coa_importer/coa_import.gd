@@ -158,8 +158,7 @@ func import_animations(animations, root, source_file):
 			for event in timelineEvent["events"]:
 				if event["type"] == "EVENT":
 					anim_data.track_insert_key(eventTrackIndex, float(frame/fps), { "method": event["value"], "args": [] })
-
-
+		
 		anim_player.add_animation(anim["name"],anim_data)
 		anim_player.set_meta(anim["name"],true)
 		anim_player.clear_caches()

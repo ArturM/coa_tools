@@ -134,9 +134,10 @@ func import_animations(animations, root, source_file):
 					anim_data.value_track_set_update_mode(idx, 1)
 
 		var fps = anim["fps"]
+		### create sounds
 		for sound in anim["sounds"]:
 			var trackIndex = anim_data.add_track(Animation.TYPE_AUDIO)
-			anim_data.track_set_path(trackIndex, "AudioStreamPlayer")
+			anim_data.track_set_path(trackIndex, audioStreamPlayer.name)
 
 			var startframe = (sound["frame_start"]+sound["frame_offset_start"])/fps
 			var startoffset = sound["frame_offset_start"]/fps
@@ -147,6 +148,17 @@ func import_animations(animations, root, source_file):
 			var keyIndex = anim_data.audio_track_insert_key(trackIndex, startframe, loadedFile)
 			anim_data.audio_track_set_key_start_offset(trackIndex, keyIndex, startoffset)
 			anim_data.audio_track_set_key_end_offset(trackIndex, keyIndex, endoffset)
+
+		### create events
+		for timelineEvent in anim["events"]:
+			var frame = timelineEvent["frame"]
+			var eventTrackIndex = anim_data.add_track(Animation.TYPE_METHOD)
+			anim_data.track_set_path(eventTrackIndex, "./")
+
+			for event in timelineEvent["events"]:
+				if event["type"] == "EVENT":
+					anim_data.track_insert_key(eventTrackIndex, float(frame/fps), { "method": event["value"], "args": [] })
+
 
 		anim_player.add_animation(anim["name"],anim_data)
 		anim_player.set_meta(anim["name"],true)

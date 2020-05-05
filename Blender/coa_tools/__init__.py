@@ -255,6 +255,10 @@ def register_keymaps():
     kmi.properties.name = "COATOOLS_MT_menu"
     addon_keymaps.append(km)
 
+    kmi = km.keymap_items.new("object.export_to_json", type = "K", value = "PRESS")
+    # kmi.properties.name = "object.export_to_json"
+    addon_keymaps.append(km)
+
 def unregister_keymaps():
     wm = bpy.context.window_manager
     for km in addon_keymaps:
